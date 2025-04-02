@@ -1,0 +1,155 @@
+"""Main entry point for the Personal Budget Tracker API."""
+
+import logging
+import os
+from datetime import timedelta
+from fastapi import FastAPI, Request, Form, Depends
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, RedirectResponse
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from dotenv import load_dotenv
+
+# Import Modules
+import auth
+import categories
+import expenses
+from database import get_db, engine
+from models import Base, Users, Category, Expense
+from auth import create_access_token, bcrypt_context, ACCESS_TOKEN_EXPIRE_MINUTES, decode_access_token
+
+# Load environment variables
+load_dotenv()
+
+
+def setup_logging():
+    """Configures logging for the application."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler("app.log"),  # Log to a file
+            logging.StreamHandler()  # Log to console
+        ],
+    )
+    return logging.getLogger(__name__)
+
+
+logger = setup_logging()
+
+# Database Setup
+Base.metadata.create_all(bind=engine)
+logger.info("Database tables created successfully")
+
+# FastAPI App Instance with Metadata
+app = FastAPI(
+    title="Personal Budget Tracker API",
+    description="Manage categories, expenses, and authentication securely.",
+    version="1.0",
+    contact={"name": "Your Name", "email": "your.email@example.com"},
+    license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
+)
+
+# Secret Key for Session Middleware
+SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
+
+# Include Routers Dynamically
+routers = [auth.router, categories.router, expenses.router]
+for router in routers:
+    app.include_router(router)
+
+logger.info("FastAPI application has started")
+
+# Template and Static Files Configuration
+templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    """Renders the home page."""
+    return templates.TemplateResponse("base.html", {"request": request})
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Renders the login page."""
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.post("/login")
+async def login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """Handles user login and sets access token."""
+    user = db.query(Users).filter(Users.username == username).first()
+    if user and bcrypt_context.verify(password, user.hashed_password):
+        expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        token = create_access_token(user.user_id, expires_delta)
+        response = RedirectResponse(url="/dashboard", status_code=303)
+        response.set_cookie(key="access_token", value=token, httponly=False, secure=False)
+        return response
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
+
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    """Renders the registration page."""
+    return templates.TemplateResponse("register.html", {"request": request})
+
+
+@app.post("/register")
+async def register(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """Handles user registration."""
+    existing_user = db.query(Users).filter(Users.username == username).first()
+    if existing_user:
+        return templates.TemplateResponse("register.html", {"request": request, "error": "Username already exists"})
+
+    new_user = Users(username=username, hashed_password=bcrypt_context.hash(password))
+    db.add(new_user)
+    db.commit()
+
+    return RedirectResponse(url="/login", status_code=303)
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request, db: Session = Depends(get_db)):
+    """Renders the user dashboard if authenticated."""
+    token = request.cookies.get("access_token")
+    if not token:
+        return RedirectResponse(url="/login", status_code=303)
+
+    user_id = decode_access_token(token)
+    if user_id is None:
+        return RedirectResponse(url="/login", status_code=303)
+
+    user = db.query(Users).filter(Users.user_id == user_id).first()
+    if not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    # Fetch the user's categories
+    user_categories = db.query(Category).filter(Category.user_id == user.user_id).all()
+
+    for category in user_categories:
+        category.expenses = db.query(Expense).filter(Expense.category_id == category.category_id).all()
+        category.total_expenses = db.query(Expense).filter(Expense.category_id == category.category_id).with_entities(func.sum(Expense.added_expense_amount)).scalar() or 0.0
+    return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "categories": user_categories})
+
+
+@app.get("/logout")
+async def logout():
+    """Handles user logout by clearing the access token."""
+    response = RedirectResponse(url="/")
+    response.delete_cookie("access_token")
+    return response
+
+# Ensure final newline

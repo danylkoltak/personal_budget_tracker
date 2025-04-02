@@ -1,0 +1,155 @@
+"""Expense management API routes for the Personal Budget Tracker."""
+
+import logging
+from datetime import datetime
+from typing import Annotated, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+
+from models import Category, Users, Expense
+from database import get_db
+from auth import get_current_user
+
+router = APIRouter(prefix="/expenses", tags=["Expenses"])
+
+# Set up logger
+logger = logging.getLogger(__name__)
+
+DbDependency = Annotated[Session, Depends(get_db)]
+
+
+class ExpenseCreateRequest(BaseModel):
+    """Request schema for creating an expense."""
+
+    category_id: int
+    added_expense_amount: float
+    expense_description: Optional[str] = None
+
+
+class ExpenseResponse(BaseModel):
+    """Response schema for retrieving an expense."""
+
+    expense_id: int
+    category_id: int
+    added_expense_amount: float
+    expense_description: Optional[str] = None
+    timestamp: datetime
+
+    class Config:
+        orm_mode = True
+
+
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=ExpenseResponse)
+async def add_expense(
+    expense_request: ExpenseCreateRequest,
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Adds a new expense under the specified category for the current user."""
+
+    category = (
+        db.query(Category)
+        .filter(
+            Category.category_id == expense_request.category_id,
+            Category.user_id == current_user.user_id,
+        )
+        .first()
+    )
+
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found or unauthorized.",
+        )
+
+    new_expense = Expense(
+        category_id=expense_request.category_id,
+        added_expense_amount=expense_request.added_expense_amount,
+        expense_description=expense_request.expense_description,
+        timestamp=datetime.now(),
+    )
+
+    db.add(new_expense)
+    db.commit()
+    db.refresh(new_expense)
+
+    return new_expense
+
+
+@router.get("/{category_id}", response_model=List[ExpenseResponse], status_code=status.HTTP_200_OK)
+async def get_expenses_for_category(
+    category_id: int,
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Retrieves all expenses for a specific category owned by the current user."""
+
+    category = (
+        db.query(Category)
+        .filter(Category.category_id == category_id, Category.user_id == current_user.user_id)
+        .first()
+    )
+
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found or unauthorized.",
+        )
+
+    expenses = db.query(Expense).filter(Expense.category_id == category_id).all()
+
+    return expenses
+
+
+@router.delete("/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_expense(
+    expense_id: int,
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Deletes a specific expense, ensuring it belongs to the current user."""
+
+    expense = (
+        db.query(Expense)
+        .join(Category)
+        .filter(Expense.expense_id == expense_id, Category.user_id == current_user.user_id)
+        .first()
+    )
+
+    if not expense:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Expense not found or unauthorized.",
+        )
+
+    db.delete(expense)
+    db.commit()
+
+
+@router.get("/sum/{category_id}", response_model=dict, status_code=status.HTTP_200_OK)
+async def sum_expenses_for_category(
+    category_id: int,
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Calculates the sum of all expenses for a specific category owned by the current user."""
+
+    category = (
+        db.query(Category)
+        .filter(Category.category_id == category_id, Category.user_id == current_user.user_id)
+        .first()
+    )
+
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found or unauthorized.",
+        )
+
+    # Sum up the expenses for this category
+    total_expenses = db.query(func.sum(Expense.added_expense_amount)).filter(Expense.category_id == category_id).scalar() or 0
+
+    return {"total_expenses": total_expenses}
