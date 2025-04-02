@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+    <p class="howdy-message">Howdy, {{ user.username }}!</p>
+
+    <h3>Create Your Expense Categories</h3>
+
+    <!-- Add Category Form -->
+    <form id="categoryForm">
+        <input type="text" id="categoryName" placeholder="New Category" required maxlength="100">
+        <button type="submit">Add Category</button>
+    </form>
+
+    <!-- Category List -->
+    <ul id="categoryList">
+        {% for category in categories %}
+            <li>
+                <strong>{{ category.category_name }}</strong>
+
+                <!-- Display the total expenses for this category -->
+                <button class="sum-expenses-btn" data-category-id="{{ category.category_id }}">Sum Expenses</button>
+                <p class="total-expenses" id="total-expenses-{{ category.category_id }}"></p>
+
+                <!-- Delete Category (with all expenses) -->
+                <button class="delete-category-btn" data-category-id="{{ category.category_id }}">Delete Category</button>
+
+                <!-- Expense Form -->
+                <form class="expenseForm" data-category-id="{{ category.category_id }}">
+                    <input type="number" step="0.01" min="0.01" class="expenseAmount" placeholder="Amount" required>
+                    <input type="text" class="expenseDescription" placeholder="Optional Description" maxlength="255">
+                    <button type="submit">Add Expense</button>
+                </form>
+
+                <!-- Expenses List -->
+                <ul class="expenseList" id="expenses-{{ category.category_id }}">
+                    {% for expense in category.expenses %}
+                        <li>
+                            {{ expense.added_expense_amount }} - {{ expense.expense_description or "No description" }}
+                            <!-- Delete Specific Expense -->
+                            <button class="delete-expense-btn" data-expense-id="{{ expense.expense_id }}">Delete Expense</button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const categoryForm = document.getElementById("categoryForm");
+            const categoryList = document.getElementById("categoryList");
+
+            function getAccessToken() {
+                const cookies = document.cookie.split("; ");
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.split("=");
+                    if (name === "access_token") return value;
+                }
+                return null;
+            }
+
+            async function fetchAPI(url, method, body = null) {
+                const token = getAccessToken();
+                if (!token) {
+                    alert("Please log in.");
+                    return null;
+                }
+
+                const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
+                const response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : null });
+
+                if (!response.ok) {
+                    alert("Operation failed.");
+                    return null;
+                }
+                return response;
+            }
+
+            // Handle the sum expenses button click
+            document.querySelectorAll(".sum-expenses-btn").forEach(button => {
+                button.addEventListener("click", async function () {
+                const categoryId = button.getAttribute("data-category-id");
+
+                // Fetch the sum of expenses for the selected category
+                const response = await fetchAPI(`/expenses/sum/${categoryId}`, "GET");
+                if (response) {
+                    const data = await response.json();
+                    document.getElementById(`total-expenses-${categoryId}`).innerText = `Total Expenses: $${data.total_expenses}`;
+                }
+                });
+            });
+
+            // Add category
+            categoryForm.addEventListener("submit", async function (event) {
+                event.preventDefault();
+                const categoryName = document.getElementById("categoryName").value.trim();
+                if (!categoryName) return alert("Category name cannot be empty.");
+
+                const response = await fetchAPI("/categories/", "POST", { category_name: categoryName });
+                if (response) location.reload();
+            });
+
+            // Delete Category (with all expenses)
+            categoryList.addEventListener("click", async function (event) {
+                if (event.target.classList.contains("delete-category-btn")) {
+                    const categoryId = event.target.getAttribute("data-category-id");
+
+                    const response = await fetchAPI(`/categories/${categoryId}`, "DELETE");
+                    if (response) event.target.closest("li").remove();  // Remove from UI without reload
+                }
+            });
+        
+            // Add expense
+            document.querySelectorAll(".expenseForm").forEach(form => {
+                form.addEventListener("submit", async function (event) {
+                    event.preventDefault();
+
+                    const categoryId = form.getAttribute("data-category-id");
+                    const amount = parseFloat(form.querySelector(".expenseAmount").value.trim());
+                    const description = form.querySelector(".expenseDescription").value.trim() || null;
+
+                    if (!amount || amount <= 0) return alert("Expense amount must be greater than zero.");
+
+                    const response = await fetchAPI("/expenses/", "POST", { 
+                        category_id: parseInt(categoryId),
+                        added_expense_amount: amount,
+                        expense_description: description
+                    });
+
+                    if (response) location.reload();
+                });
+            });
+
+            
+
+            // Delete Expense
+            document.querySelectorAll(".delete-expense-btn").forEach(button => {
+                button.addEventListener("click", async function () {
+                    const expenseId = button.getAttribute("data-expense-id");
+
+                    const response = await fetchAPI(`/expenses/${expenseId}`, "DELETE");
+                    if (response) button.closest("li").remove();  // Remove from UI without reload
+                });
+            });
+        });
+    </script>
+{% endblock %}
