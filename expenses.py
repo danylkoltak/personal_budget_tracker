@@ -78,6 +78,21 @@ async def add_expense(
 
     return new_expense
 
+@router.get("/sum_all", response_model=dict, status_code=status.HTTP_200_OK)
+async def sum_all_expenses(
+    current_user: Users = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Calculates the total sum of all expenses across all categories for the current user."""
+
+    total_expenses_all = (
+        db.query(func.sum(Expense.added_expense_amount))
+        .join(Category)
+        .filter(Category.user_id == current_user.user_id)
+        .scalar() or 0
+    )
+
+    return {"total_expenses_all": total_expenses_all}
 
 @router.get("/{category_id}", response_model=List[ExpenseResponse], status_code=status.HTTP_200_OK)
 async def get_expenses_for_category(
@@ -103,7 +118,6 @@ async def get_expenses_for_category(
 
     return expenses
 
-
 @router.delete("/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_expense(
     expense_id: int,
@@ -112,24 +126,14 @@ async def delete_expense(
 ):
     """Deletes a specific expense, ensuring it belongs to the current user."""
 
-    expense = (
-        db.query(Expense)
-        .join(Category)
-        .filter(Expense.expense_id == expense_id, Category.user_id == current_user.user_id)
-        .first()
-    )
-
-    if not expense:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Expense not found or unauthorized.",
-        )
+    expense = db.query(Expense).filter(Expense.expense_id == expense_id).first()
+    if not expense or expense.category.user_id != current_user.user_id:
+        raise HTTPException(status_code=404, detail="Expense not found or unauthorized.")
 
     db.delete(expense)
     db.commit()
 
-
-@router.get("/sum/{category_id}", response_model=dict, status_code=status.HTTP_200_OK)
+@router.get("/sum/category/{category_id}", response_model=dict, status_code=status.HTTP_200_OK)
 async def sum_expenses_for_category(
     category_id: int,
     current_user: Users = Depends(get_current_user),
