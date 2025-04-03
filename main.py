@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from dotenv import load_dotenv
 
@@ -128,22 +128,38 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     if not token:
         return RedirectResponse(url="/login", status_code=303)
 
-    user_id = decode_access_token(token)
-    if user_id is None:
+    try:
+        user_id = decode_access_token(token)
+    except Exception:
         return RedirectResponse(url="/login", status_code=303)
 
     user = db.query(Users).filter(Users.user_id == user_id).first()
     if not user:
         return RedirectResponse(url="/login", status_code=303)
 
-    # Fetch the user's categories
-    user_categories = db.query(Category).filter(Category.user_id == user.user_id).all()
+    # Fetch user categories along with their expenses in one query
+    user_categories = (
+        db.query(Category)
+        .filter(Category.user_id == user.user_id)
+        .options(joinedload(Category.expenses))
+        .all()
+    )
 
+    # Calculate total expenses per category in Python
     for category in user_categories:
-        category.expenses = db.query(Expense).filter(Expense.category_id == category.category_id).all()
-        category.total_expenses = db.query(Expense).filter(Expense.category_id == category.category_id).with_entities(func.sum(Expense.added_expense_amount)).scalar() or 0.0
-    return templates.TemplateResponse("dashboard.html", {"request": request, "user": user, "categories": user_categories})
+        category.total_expenses = sum(expense.added_expense_amount for expense in category.expenses)
 
+    #Fetch total expenses across all categories for the user
+    total_expenses_all = (
+        db.query(func.sum(Expense.added_expense_amount))
+        .join(Category)
+        .filter(Category.user_id == user.user_id)
+        .scalar()
+    ) or 0.0  # Ensures it returns a number, not None   
+
+    return templates.TemplateResponse(
+        "dashboard.html", {"request": request, "user": user, "categories": user_categories, "total_expenses_all": total_expenses_all},
+    )
 
 @app.get("/logout")
 async def logout():
@@ -151,5 +167,3 @@ async def logout():
     response = RedirectResponse(url="/")
     response.delete_cookie("access_token")
     return response
-
-# Ensure final newline

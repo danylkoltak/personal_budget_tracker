@@ -5,13 +5,15 @@
 
     <p class="howdy-message">Howdy, {{ user.username }}!</p>
 
-    <h3>Create Your Expense Categories</h3>
+    <h2>Create Your Expense Categories</h2>
 
     <!-- Add Category Form -->
     <form id="categoryForm">
         <input type="text" id="categoryName" placeholder="New Category" required maxlength="100">
         <button type="submit">Add Category</button>
     </form>
+
+    <h4>Total for all Categories: ${{ total_expenses_all }}</h4>
 
     <!-- Category List -->
     <ul id="categoryList">
@@ -20,11 +22,8 @@
                 <strong>{{ category.category_name }}</strong>
 
                 <!-- Display the total expenses for this category -->
-                <button class="sum-expenses-btn" data-category-id="{{ category.category_id }}">Sum Expenses</button>
+                <button class="sum-expenses-btn" data-category-id="{{ category.category_id }}">Sum Expenses for this Category</button>
                 <p class="total-expenses" id="total-expenses-{{ category.category_id }}"></p>
-
-                <!-- Delete Category (with all expenses) -->
-                <button class="delete-category-btn" data-category-id="{{ category.category_id }}">Delete Category</button>
 
                 <!-- Expense Form -->
                 <form class="expenseForm" data-category-id="{{ category.category_id }}">
@@ -43,6 +42,8 @@
                         </li>
                     {% endfor %}
                 </ul>
+                <!-- Delete Category (with all expenses) -->
+                <button class="delete-category-btn" data-category-id="{{ category.category_id }}">Delete Category with all Expenses</button>
             </li>
         {% endfor %}
     </ul>
@@ -84,10 +85,10 @@
                 const categoryId = button.getAttribute("data-category-id");
 
                 // Fetch the sum of expenses for the selected category
-                const response = await fetchAPI(`/expenses/sum/${categoryId}`, "GET");
+                const response = await fetchAPI(`/expenses/sum/category/${categoryId}`, "GET");
                 if (response) {
                     const data = await response.json();
-                    document.getElementById(`total-expenses-${categoryId}`).innerText = `Total Expenses: $${data.total_expenses}`;
+                    document.getElementById(`total-expenses-${categoryId}`).innerText = `Total for this Category: $${data.total_expenses}`;
                 }
                 });
             });
@@ -132,8 +133,6 @@
                     if (response) location.reload();
                 });
             });
-
-            
 
             // Delete Expense
             document.querySelectorAll(".delete-expense-btn").forEach(button => {
