@@ -5,15 +5,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from typing import Generator
 
-
 load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-
-if os.getenv("TESTING") == "1":
-    DATABASE_URL = "postgresql://budget:budget123@db:5432/budget_test_db"
 
 if not DATABASE_URL:
     logger.critical("DATABASE_URL is not set in .env file!")
@@ -26,7 +22,6 @@ engine = create_engine(
     pool_pre_ping=True,
     pool_recycle=1800   
     )
-
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

@@ -65,63 +65,12 @@ logger.info("FastAPI application has started")
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     """Renders the home page."""
     return templates.TemplateResponse("base.html", {"request": request})
 
-
-@app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    """Renders the login page."""
-    return templates.TemplateResponse("login.html", {"request": request})
-
-
-@app.post("/login")
-async def login(
-    request: Request,
-    username: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db),
-):
-    """Handles user login and sets access token."""
-    user = db.query(Users).filter(Users.username == username).first()
-    if user and bcrypt_context.verify(password, user.hashed_password):
-        expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        token = create_access_token(user.user_id, expires_delta)
-        response = RedirectResponse(url="/dashboard", status_code=303)
-        response.set_cookie(key="access_token", value=token, httponly=False, secure=False)
-        return response
-    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
-
-
-@app.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request):
-    """Renders the registration page."""
-    return templates.TemplateResponse("register.html", {"request": request})
-
-
-@app.post("/register")
-async def register(
-    request: Request,
-    username: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db),
-):
-    """Handles user registration."""
-    existing_user = db.query(Users).filter(Users.username == username).first()
-    if existing_user:
-        return templates.TemplateResponse("register.html", {"request": request, "error": "Username already exists"})
-
-    new_user = Users(username=username, hashed_password=bcrypt_context.hash(password))
-    db.add(new_user)
-    db.commit()
-
-    return RedirectResponse(url="/login", status_code=303)
-
-
-@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse, name="dashboard")
 async def dashboard(request: Request, db: Session = Depends(get_db)):
     """Renders the user dashboard if authenticated."""
     token = request.cookies.get("access_token")
@@ -160,10 +109,3 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         "dashboard.html", {"request": request, "user": user, "categories": user_categories, "total_expenses_all": total_expenses_all},
     )
-
-@app.get("/logout")
-async def logout():
-    """Handles user logout by clearing the access token."""
-    response = RedirectResponse(url="/")
-    response.delete_cookie("access_token")
-    return response
