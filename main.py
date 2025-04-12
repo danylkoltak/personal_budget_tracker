@@ -65,10 +65,10 @@ logger.info("FastAPI application has started")
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse, name="home")
 async def home(request: Request):
     """Renders the home page."""
-    return templates.TemplateResponse("base.html", {"request": request})
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/dashboard", response_class=HTMLResponse, name="dashboard")
 async def dashboard(request: Request, db: Session = Depends(get_db)):
