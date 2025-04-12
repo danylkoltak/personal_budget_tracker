@@ -1,13 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Budget Tracker</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-    <h1>Welcome to Budget Tracker</h1>
-    <a href="{{ url_for('login') }}">Login</a>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Welcome - Budget Tracker{% endblock %}
+
+{% block content %}
+    <div style="text-align: center;">
+        <p class="intro-text">Track your expenses, stay on budget, and take control of your finances.</p>
+        <img src="{{ url_for('static', path='/images/close-up-coin-pile-isolated_23-2151206066.jpg') }}" alt="Budget Tracker" class="main-image">
+{% endblock %}

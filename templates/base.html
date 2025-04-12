@@ -8,7 +8,10 @@
 </head>
 <body>
     <header>
-        <h1>Personal Budget Tracker</h1>
+        <h1><a href="{{ url_for('dashboard') if user else url_for('home') }}"
+            style="color: inherit; text-decoration: none;">
+             Personal Budget Tracker
+         </a></h1>
         <nav>
             {% if user %}
                 <a href="{{ url_for('dashboard') }}">Dashboard</a>
@@ -20,9 +23,7 @@
         </nav>
     </header>
     <main>
-        {% block content %}
-        <img src="{{ url_for('static', path='/images/close-up-coin-pile-isolated_23-2151206066.jpg') }}" alt="Budget Tracker" class="main-image">
-        {% endblock %}
+        {% block content %}{% endblock %}
     </main>
 </body>
 </html>

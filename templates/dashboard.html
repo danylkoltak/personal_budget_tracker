@@ -2,145 +2,177 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-
     <p class="howdy-message">Howdy, {{ user.username }}!</p>
 
-    <h2>Create Your Expense Categories</h2>
+    <h2>Create a New Expense Category</h2>
 
-    <!-- Add Category Form -->
-    <form id="categoryForm">
+    <form id="categoryForm" class="form-inline">
         <input type="text" id="categoryName" placeholder="New Category" required maxlength="100">
-        <button type="submit">Add Category</button>
+        <button type="submit" class="btn add-btn"><i class="fas fa-plus"></i> Add Category</button>
     </form>
 
-    <h4>Total for all Categories: ${{ total_expenses_all }}</h4>
+    <h4 class="total-all">Total for all Categories: {{ total_expenses_all }}</h4>
 
-    <!-- Category List -->
-    <ul id="categoryList">
+    <div id="categoryList" class="category-grid">
         {% for category in categories %}
-            <li>
-                <strong>{{ category.category_name }}</strong>
+            <div class="form-inline">
+                <h3 class="category-name">{{ category.category_name }}</h3>
 
-                <!-- Display the total expenses for this category -->
-                <button class="sum-expenses-btn" data-category-id="{{ category.category_id }}">Sum Expenses for this Category</button>
+                <button class="btn sum-btn sum-expenses-btn" data-category-id="{{ category.category_id }}">
+                    <i class="fas fa-coins"></i> Sum Expenses for this Category
+                </button>
                 <p class="total-expenses" id="total-expenses-{{ category.category_id }}"></p>
 
-                <!-- Expense Form -->
                 <form class="expenseForm" data-category-id="{{ category.category_id }}">
                     <input type="number" step="0.01" min="0.01" class="expenseAmount" placeholder="Amount" required>
                     <input type="text" class="expenseDescription" placeholder="Optional Description" maxlength="255">
-                    <button type="submit">Add Expense</button>
+                    <button type="submit" class="btn add-btn"><i class="fas fa-plus"></i> Add Expense</button>
                 </form>
 
-                <!-- Expenses List -->
-                <ul class="expenseList" id="expenses-{{ category.category_id }}">
+                <ul class="expenseList">
                     {% for expense in category.expenses %}
                         <li>
-                            {{ expense.added_expense_amount }} - {{ expense.expense_description or "No description" }}
-                            <!-- Delete Specific Expense -->
-                            <button class="delete-expense-btn" data-expense-id="{{ expense.expense_id }}">Delete Expense</button>
+                            <span class="expense-amount">Spent: {{ expense.added_expense_amount }}</span>
+                            <span class="expense-description">{{ expense.expense_description or "No description" }}</span>
+                            <button class="btn edit-btn edit-expense-btn" data-expense-id="{{ expense.expense_id }}">
+                                <i class="fas fa-edit">Edit Expense</i> 
+                            </button>
+                            <button class="btn delete-btn delete-expense-btn" data-expense-id="{{ expense.expense_id }}">
+                                <i class="fas fa-trash">Delete Expense</i> 
+                            </button>
                         </li>
                     {% endfor %}
                 </ul>
-                <!-- Delete Category (with all expenses) -->
-                <button class="delete-category-btn" data-category-id="{{ category.category_id }}">Delete Category with all Expenses</button>
-            </li>
+
+                <button class="btn edit-btn edit-category-btn" data-category-id="{{ category.category_id }}">
+                    <i class="fas fa-edit">Edit Category</i> 
+                </button>
+                <button class="btn delete-btn delete-category-btn" data-category-id="{{ category.category_id }}">
+                    <i class="fas fa-trash-alt">Delete Category</i> 
+                </button>
+            </div>
         {% endfor %}
-    </ul>
+    </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const categoryForm = document.getElementById("categoryForm");
-            const categoryList = document.getElementById("categoryList");
+            const getAccessToken = () => {
+                return document.cookie.split("; ").find(row => row.startsWith("access_token="))?.split("=")[1];
+            };
 
-            function getAccessToken() {
-                const cookies = document.cookie.split("; ");
-                for (let cookie of cookies) {
-                    const [name, value] = cookie.split("=");
-                    if (name === "access_token") return value;
-                }
-                return null;
-            }
-
-            async function fetchAPI(url, method, body = null) {
+            const fetchAPI = async (url, method, body = null) => {
                 const token = getAccessToken();
-                if (!token) {
-                    alert("Please log in.");
-                    return null;
-                }
-
+                if (!token) return alert("Please log in.");
                 const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
                 const response = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : null });
-
-                if (!response.ok) {
-                    alert("Operation failed.");
-                    return null;
-                }
+                if (!response.ok) return alert("Operation failed.");
                 return response;
-            }
+            };
 
-            // Handle the sum expenses button click
             document.querySelectorAll(".sum-expenses-btn").forEach(button => {
-                button.addEventListener("click", async function () {
-                const categoryId = button.getAttribute("data-category-id");
-
-                // Fetch the sum of expenses for the selected category
-                const response = await fetchAPI(`/expenses/sum/category/${categoryId}`, "GET");
-                if (response) {
-                    const data = await response.json();
-                    document.getElementById(`total-expenses-${categoryId}`).innerText = `Total for this Category: $${data.total_expenses}`;
-                }
+                button.addEventListener("click", async () => {
+                    const categoryId = button.dataset.categoryId;
+                    const response = await fetchAPI(`/expenses/sum/category/${categoryId}`, "GET");
+                    if (response) {
+                        const data = await response.json();
+                        document.getElementById(`total-expenses-${categoryId}`).textContent = `Total: $${data.total_expenses}`;
+                    }
                 });
             });
 
-            // Add category
-            categoryForm.addEventListener("submit", async function (event) {
-                event.preventDefault();
-                const categoryName = document.getElementById("categoryName").value.trim();
-                if (!categoryName) return alert("Category name cannot be empty.");
-
-                const response = await fetchAPI("/categories/", "POST", { category_name: categoryName });
-                if (response) location.reload();
+            document.getElementById("categoryForm").addEventListener("submit", async e => {
+                e.preventDefault();
+                const name = document.getElementById("categoryName").value.trim();
+                if (!name) return alert("Category name cannot be empty.");
+                const res = await fetchAPI("/categories/", "POST", { category_name: name });
+                if (res) location.reload();
             });
 
-            // Delete Category (with all expenses)
-            categoryList.addEventListener("click", async function (event) {
-                if (event.target.classList.contains("delete-category-btn")) {
-                    const categoryId = event.target.getAttribute("data-category-id");
-
-                    const response = await fetchAPI(`/categories/${categoryId}`, "DELETE");
-                    if (response) event.target.closest("li").remove();  // Remove from UI without reload
-                }
-            });
-        
-            // Add expense
             document.querySelectorAll(".expenseForm").forEach(form => {
-                form.addEventListener("submit", async function (event) {
-                    event.preventDefault();
-
-                    const categoryId = form.getAttribute("data-category-id");
+                form.addEventListener("submit", async e => {
+                    e.preventDefault();
+                    const categoryId = form.dataset.categoryId;
                     const amount = parseFloat(form.querySelector(".expenseAmount").value.trim());
                     const description = form.querySelector(".expenseDescription").value.trim() || null;
+                    if (!amount || amount <= 0) return alert("Amount must be positive.");
 
-                    if (!amount || amount <= 0) return alert("Expense amount must be greater than zero.");
-
-                    const response = await fetchAPI("/expenses/", "POST", { 
+                    const res = await fetchAPI("/expenses/", "POST", {
                         category_id: parseInt(categoryId),
                         added_expense_amount: amount,
                         expense_description: description
                     });
-
-                    if (response) location.reload();
+                    if (res) location.reload();
                 });
             });
 
-            // Delete Expense
             document.querySelectorAll(".delete-expense-btn").forEach(button => {
-                button.addEventListener("click", async function () {
-                    const expenseId = button.getAttribute("data-expense-id");
+                button.addEventListener("click", async () => {
+                    const expenseId = button.dataset.expenseId;
+                    const res = await fetchAPI(`/expenses/${expenseId}`, "DELETE");
+                    if (res) button.closest("li").remove();
+                });
+            });
 
-                    const response = await fetchAPI(`/expenses/${expenseId}`, "DELETE");
-                    if (response) button.closest("li").remove();  // Remove from UI without reload
+            document.querySelectorAll(".delete-category-btn").forEach(button => {
+                button.addEventListener("click", async () => {
+                    const categoryId = button.dataset.categoryId;
+                    const res = await fetchAPI(`/categories/${categoryId}`, "DELETE");
+                    if (res) button.closest(".category-card").remove();
+                });
+            });
+
+            // Edit Category functionality
+            document.querySelectorAll(".edit-category-btn").forEach(button => {
+                button.addEventListener("click", function () {
+                    const categoryCard = button.closest(".category-card");
+                    const categoryNameElement = categoryCard.querySelector(".category-name");
+                    const categoryName = categoryNameElement.textContent;
+                    const categoryId = button.dataset.categoryId;
+                    const isEditing = button.textContent.trim() === "Save Changes";
+
+                    if (isEditing) {
+                        // Save Changes state
+                        const newCategoryName = categoryCard.querySelector("input").value;
+                        fetchAPI(`/categories/${categoryId}`, "PUT", { category_name: newCategoryName })
+                            .then(() => {
+                                categoryNameElement.textContent = newCategoryName;
+                                button.textContent = "Edit Category";
+                            });
+                    } else {
+                        // Edit Category state
+                        categoryNameElement.innerHTML = `<input type="text" value="${categoryName}">`;
+                        button.textContent = "Save Changes";
+                    }
+                });
+            });
+
+            // Edit Expense functionality
+            document.querySelectorAll(".edit-expense-btn").forEach(button => {
+                button.addEventListener("click", function () {
+                    const expenseItem = button.closest("li");
+                    const expenseAmountElement = expenseItem.querySelector(".expense-amount");
+                    const expenseDescriptionElement = expenseItem.querySelector(".expense-description");
+                    const expenseAmount = expenseAmountElement.textContent.trim();
+                    const expenseDescription = expenseDescriptionElement ? expenseDescriptionElement.textContent.trim() : "";
+                    const expenseId = button.dataset.expenseId;
+                    const isEditing = button.textContent.trim() === "Save Changes";
+
+                    if (isEditing) {
+                        // Save Changes state
+                        const newAmount = expenseItem.querySelector("input.amount-input").value;
+                        const newDescription = expenseItem.querySelector("input.description-input").value;
+                        fetchAPI(`/expenses/${expenseId}`, "PUT", { added_expense_amount: newAmount, expense_description: newDescription })
+                            .then(() => {
+                                expenseAmountElement.textContent = `$${newAmount}`;
+                                expenseDescriptionElement.textContent = newDescription || "No description";
+                                button.textContent = "Edit Expense";
+                            });
+                    } else {
+                        // Edit Expense state
+                        expenseAmountElement.innerHTML = `<input type="number" value="${expenseAmount}" class="amount-input" step="0.01" min="0.01">`;
+                        expenseDescriptionElement.innerHTML = `<input type="text" value="${expenseDescription}" class="description-input" maxlength="255">`;
+                        button.textContent = "Save Changes";
+                    }
                 });
             });
         });
