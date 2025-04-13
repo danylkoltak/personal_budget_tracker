@@ -8,25 +8,25 @@
 
     <form id="categoryForm" class="form-inline">
         <input type="text" id="categoryName" placeholder="New Category" required maxlength="100">
-        <button type="submit" class="btn add-btn"><i class="fas fa-plus"></i> Add Category</button>
+        <button type="submit" class="btn add-btn">Add Category</button>
     </form>
 
     <h4 class="total-all">Total for all Categories: {{ total_expenses_all }}</h4>
 
     <div id="categoryList" class="category-grid">
         {% for category in categories %}
-            <div class="form-inline">
+            <div class="category-card form-inline">
                 <h3 class="category-name">{{ category.category_name }}</h3>
 
                 <button class="btn sum-btn sum-expenses-btn" data-category-id="{{ category.category_id }}">
-                    <i class="fas fa-coins"></i> Sum Expenses for this Category
+                    Sum Expenses for this Category
                 </button>
                 <p class="total-expenses" id="total-expenses-{{ category.category_id }}"></p>
 
                 <form class="expenseForm" data-category-id="{{ category.category_id }}">
                     <input type="number" step="0.01" min="0.01" class="expenseAmount" placeholder="Amount" required>
                     <input type="text" class="expenseDescription" placeholder="Optional Description" maxlength="255">
-                    <button type="submit" class="btn add-btn"><i class="fas fa-plus"></i> Add Expense</button>
+                    <button type="submit" class="btn add-btn">Add Expense</button>
                 </form>
 
                 <ul class="expenseList">
@@ -35,20 +35,20 @@
                             <span class="expense-amount">Spent: {{ expense.added_expense_amount }}</span>
                             <span class="expense-description">{{ expense.expense_description or "No description" }}</span>
                             <button class="btn edit-btn edit-expense-btn" data-expense-id="{{ expense.expense_id }}">
-                                <i class="fas fa-edit">Edit Expense</i> 
+                                Edit Expense
                             </button>
                             <button class="btn delete-btn delete-expense-btn" data-expense-id="{{ expense.expense_id }}">
-                                <i class="fas fa-trash">Delete Expense</i> 
+                                Delete Expense
                             </button>
                         </li>
                     {% endfor %}
                 </ul>
 
                 <button class="btn edit-btn edit-category-btn" data-category-id="{{ category.category_id }}">
-                    <i class="fas fa-edit">Edit Category</i> 
+                    Edit Category
                 </button>
                 <button class="btn delete-btn delete-category-btn" data-category-id="{{ category.category_id }}">
-                    <i class="fas fa-trash-alt">Delete Category</i> 
+                    Delete Category
                 </button>
             </div>
         {% endfor %}
