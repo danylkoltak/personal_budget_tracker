@@ -105,6 +105,48 @@ async def see_all_categories(
 
     return categories
 
+@router.put("/{category_id}", status_code=status.HTTP_200_OK)
+async def edit_category(
+    category_id: int,
+    category_request: CategoryCreateRequest,
+    db: DbDependency,
+    current_user: Users = Depends(get_current_user),
+):
+    """
+    Edit the name of an existing category for the authenticated user.
+
+    Args:
+        category_id (int): The ID of the category to edit.
+        category_request (CategoryCreateRequest): The category update request data with the new name.
+        current_user (Users): The currently authenticated user.
+        db (Session): Database session.
+
+    Returns:
+        dict: Confirmation message with the updated category name.
+    """
+    # Check if the category exists and belongs to the authenticated user
+    category = db.query(Category).filter(Category.category_id == category_id, Category.user_id == current_user.user_id).first()
+
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found or not authorized."
+        )
+
+    # Check if the new category name already exists for the user
+    existing_category = db.query(Category).filter(Category.category_name == category_request.category_name, Category.user_id == current_user.user_id).first()
+    if existing_category:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Category with this name already exists."
+        )
+
+    # Update the category name
+    category.category_name = category_request.category_name
+    db.commit()
+    db.refresh(category)
+
+    return {"message": f"Category name updated successfully to '{category.category_name}'"}
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(
