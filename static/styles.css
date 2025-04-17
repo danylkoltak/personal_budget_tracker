@@ -130,7 +130,7 @@ form input:focus {
 /* Green button (General-purpose: Add Expense, Add Category, Sum Expenses) */
 .add-btn,
 .sum-btn {
-    background-color: #2ecc71;
+    background-color: #2ac432;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -154,7 +154,7 @@ form input:focus {
     color: white;
 }
 .edit-btn:hover {
-    background-color: #0056b3;
+    background-color: #bdd62e;
 }
 
 /* Button type 3 - Delete (red) */
@@ -162,8 +162,47 @@ form input:focus {
     background-color: #dc3545;
     color: white;
 }
+
 .delete-btn:hover {
-    background-color: #c82333;
+    background-color: #e73ce7;
+}
+
+.edit-expense-btn {
+    width: 130px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: #bdd62e; /* bright blue */
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+}
+
+.edit-expense-btn:hover {
+    background-color: #153fb1;
+}
+
+.delete-expense-btn {
+    width: 130px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background-color: #e73ce7; /* bright red */
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+}
+
+.delete-expense-btn:hover {
+    background-color: #c0392b;
 }
 
 /* Category list layout */
@@ -209,16 +248,40 @@ form input:focus {
 
 .expenseList li {
     display: flex;
+    justify-content: space-between; /* 🔧 Space between text and buttons */
+    align-items: flex-start; /* 🔧 Align vertically */
+    gap: 1rem;
+    margin-bottom: 0.75rem;
     flex-wrap: wrap;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
+    background-color: #ffffff;
+    padding: 10px 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    flex-wrap: nowrap;
+}
+
+.expense-details {
+    flex-grow: 1;
+    min-width: 70%;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    white-space: normal;
+}
+
+.expense-actions {
+    display: flex;
+    flex-direction: column; /* 🆕 stack buttons vertically */
+    gap: 6px;
+    min-width: 120px;
+    flex-shrink: 0; /* 🆕 prevents shrinking when text overflows */
+    align-items: flex-end; /* 🆕 align buttons to the right edge */
 }
 
 .expense-amount {
     font-weight: bold;
+    border-radius: 12px;
+    flex-shrink: 0;
+    align-self: top;
 }
 .expense-description {
     flex: 1 1 100%;
