@@ -79,7 +79,7 @@
                     const response = await fetchAPI(`/expenses/sum/category/${categoryId}`, "GET");
                     if (response) {
                         const data = await response.json();
-                        document.getElementById(`total-expenses-${categoryId}`).textContent = `Total: $${data.total_expenses}`;
+                        document.getElementById(`total-expenses-${categoryId}`).textContent = `Total: ${data.total_expenses}`;
                     }
                 });
             });
