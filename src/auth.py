@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Optional
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, status, Form
@@ -9,14 +9,15 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.security.utils import get_authorization_scheme_param
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+
 from jose import jwt
 from jose.exceptions import JWTError
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
-from database import get_db
-from models import Users
+from src.database import get_db
+from src.models import Users
 
 # Load environment variables
 load_dotenv()
@@ -55,6 +56,7 @@ class Token(BaseModel):
     """Schema for authentication token response."""
     access_token: str
     token_type: str
+
 
 def create_user_in_db(username: str, password: str, db: Session):
     """Create a user in the database after checking if the username is available."""
@@ -98,7 +100,6 @@ async def register(
 
     return RedirectResponse(url=request.url_for("login"), status_code=303)
 
-
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -116,7 +117,9 @@ def create_access_token(user_id: int, expires_delta: timedelta) -> str:
     encode = {"user_id": user_id, "exp": (datetime.now() + expires_delta).timestamp()}
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def decode_access_token(token: str) -> int | None:
+def decode_access_token(token: str | None) -> int | None:
+    if not token:
+        return None
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return int(payload.get("user_id"))
@@ -141,26 +144,27 @@ async def login(
         expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         token = create_access_token(user.user_id, expires_delta)
         response = RedirectResponse(url="/dashboard", status_code=303)
-        response.set_cookie(key="access_token", value=token, httponly=False, secure=False)
+        response.set_cookie(key="access_token_cookie", value=token, httponly=False, secure=False)
         return response
     return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
 
-@router.get("/me", status_code=status.HTTP_200_OK)
+# @router.get("/me", status_code=status.HTTP_200_OK)
 async def get_current_user(
     request: Request,
-    token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
-    access_token_cookie: str = Cookie(None)
+    access_token_cookie: Optional[str] = Cookie(None)
 ):
   
     logger.info("Token from cookie: %s", access_token_cookie)
 
     # Extract token from the Authorization header
     auth_header = request.headers.get("Authorization")
+    token = None
+
     if auth_header:
-        scheme, token_from_header = get_authorization_scheme_param(auth_header)
+        scheme, token_param = get_authorization_scheme_param(auth_header)
         if scheme.lower() == "bearer":
-            token = token_from_header
+            token = token_param
 
     # If no token in header, try getting it from cookies
     if not token and access_token_cookie:
@@ -170,7 +174,7 @@ async def get_current_user(
 
     user_id = decode_access_token(token)
     if user_id is None:
-        logger.warning("Failed token decoding or expired token")
+        logger.warning("Failed token decoding or no token provided")
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
     user = db.query(Users).filter(Users.user_id == user_id).first()
@@ -185,5 +189,5 @@ async def get_current_user(
 async def logout():
     """Handles user logout by clearing the access token."""
     response = RedirectResponse(url="/")
-    response.delete_cookie("access_token")
+    response.delete_cookie("access_token_cookie")
     return response
