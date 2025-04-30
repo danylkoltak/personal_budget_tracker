@@ -9,9 +9,9 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from models import Category, Users, Expense
-from database import get_db
-from auth import get_current_user
+from src.models import Category, Users, Expense
+from src.database import get_db
+from src.auth import get_current_user
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
 

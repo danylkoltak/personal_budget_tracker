@@ -9,9 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, constr
 from sqlalchemy.orm import Session
 
-from models import Category, Users
-from database import get_db
-from auth import get_current_user
+from src.models import Category, Users
+from src.database import get_db
+from src.auth import get_current_user
 
 # Initialize router
 router = APIRouter(prefix="/categories", tags=["Categories"])
@@ -47,17 +47,7 @@ async def create_category(
     db: DbDependency,
     current_user: Users = Depends(get_current_user),
 ):
-    """
-    Create a new category for the authenticated user.
-
-    Args:
-        category_request (CategoryCreateRequest): The category creation request data.
-        current_user (Users): The currently authenticated user.
-        db (Session): Database session.
-
-    Returns:
-        dict: Confirmation message with the new category ID.
-    """
+    
     existing_category = (
         db.query(Category)
         .filter(Category.category_name == category_request.category_name, Category.user_id == current_user.user_id)
@@ -85,16 +75,7 @@ async def see_all_categories(
     db: DbDependency,
     current_user: Users = Depends(get_current_user),
 ):
-    """
-    Retrieve all categories belonging to the authenticated user.
-
-    Args:
-        current_user (Users): The currently authenticated user.
-        db (Session): Database session.
-
-    Returns:
-        List[CategoryResponse]: A list of categories.
-    """
+    
     categories = db.query(Category).filter(Category.user_id == current_user.user_id).all()
 
     if not categories:
@@ -112,18 +93,7 @@ async def edit_category(
     db: DbDependency,
     current_user: Users = Depends(get_current_user),
 ):
-    """
-    Edit the name of an existing category for the authenticated user.
-
-    Args:
-        category_id (int): The ID of the category to edit.
-        category_request (CategoryCreateRequest): The category update request data with the new name.
-        current_user (Users): The currently authenticated user.
-        db (Session): Database session.
-
-    Returns:
-        dict: Confirmation message with the updated category name.
-    """
+    
     # Check if the category exists and belongs to the authenticated user
     category = db.query(Category).filter(Category.category_id == category_id, Category.user_id == current_user.user_id).first()
 
@@ -155,17 +125,7 @@ async def delete_category(
     current_user: Users = Depends(get_current_user),
     
 ):
-    """
-    Delete a category by its ID if it belongs to the authenticated user.
-
-    Args:
-        category_id (int): The ID of the category to delete.
-        current_user (Users): The currently authenticated user.
-        db (Session): Database session.
-
-    Returns:
-        dict: Confirmation message on successful deletion.
-    """
+    
     category = (
         db.query(Category)
         .filter(Category.category_id == category_id, Category.user_id == current_user.user_id)

@@ -4,7 +4,7 @@
 {% block content %}
     <p class="howdy-message">Howdy, {{ user.username }}!</p>
 
-    <h2>Create a New Expense Category</h2>
+    <h2>Create a new Expense Category</h2>
 
     <form id="categoryForm" class="form-inline">
         <input type="text" id="categoryName" placeholder="New Category" required maxlength="100">
@@ -61,7 +61,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const getAccessToken = () => {
-                return document.cookie.split("; ").find(row => row.startsWith("access_token="))?.split("=")[1];
+                return document.cookie.split("; ").find(row => row.startsWith("access_token_cookie="))?.split("=")[1];
             };
 
             const fetchAPI = async (url, method, body = null) => {
@@ -79,7 +79,7 @@
                     const response = await fetchAPI(`/expenses/sum/category/${categoryId}`, "GET");
                     if (response) {
                         const data = await response.json();
-                        document.getElementById(`total-expenses-${categoryId}`).textContent = `Total: $${data.total_expenses}`;
+                        document.getElementById(`total-expenses-${categoryId}`).textContent = `Total: ${data.total_expenses}`;
                     }
                 });
             });
