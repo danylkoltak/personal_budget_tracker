@@ -16,7 +16,7 @@ from src.database import engine
 from src.models import Base
 
 # Admin environment
-from admin_app import setup_admin, create_superuser, add_session_middleware
+from src.admin_app import setup_admin, create_superuser, add_session_middleware
 
 # Load environment variables
 load_dotenv()
