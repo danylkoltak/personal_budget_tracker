@@ -8,10 +8,10 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 
 # Import Modules
-import src.auth as auth
-import src.pages as pages
-import src.categories as categories
-import src.expenses as expenses
+from src import auth
+from src import pages
+from src import categories
+from src import expenses
 from src.database import engine
 from src.models import Base
 
