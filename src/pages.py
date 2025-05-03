@@ -12,15 +12,16 @@ templates = Jinja2Templates(directory="templates")
 
 router = APIRouter(tags=["Main pages"])
 
+
 @router.get("/", response_class=HTMLResponse, name="home")
 async def home(request: Request):
     """Renders the home page."""
     return templates.TemplateResponse("index.html", {"request": request})
 
+
 @router.get("/dashboard", response_class=HTMLResponse, name="dashboard")
 async def dashboard(request: Request, db: Session = Depends(get_db), current_user: Users = Depends(get_current_user)):
     """Renders the user dashboard if authenticated."""
-
     user_categories = (
         db.query(Category)
         .filter(Category.user_id == current_user.user_id)
