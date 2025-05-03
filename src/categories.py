@@ -46,14 +46,15 @@ async def create_category(
     category_request: CategoryCreateRequest,
     db: DbDependency,
     current_user: Users = Depends(get_current_user),
-):
-    
+):    
+    logger.info(f"Attempting to create category '{category_request.category_name}' for user {current_user.username}")
     existing_category = (
         db.query(Category)
         .filter(Category.category_name == category_request.category_name, Category.user_id == current_user.user_id)
         .first()
     )
     if existing_category:
+        logger.warning(f"Category creation failed: '{category_request.category_name}' already exists for user {current_user.username}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Category with this name already exists."
@@ -66,7 +67,7 @@ async def create_category(
     db.add(new_category)
     db.commit()
     db.refresh(new_category)
-
+    logger.info(f"Category '{new_category.category_name}' created successfully for user {current_user.username}")
     return {"message": f"Category '{new_category.category_name}' created successfully", "id": new_category.category_id}
 
 
@@ -75,15 +76,16 @@ async def see_all_categories(
     db: DbDependency,
     current_user: Users = Depends(get_current_user),
 ):
-    
+    logger.info(f"Retrieving all categories for user {current_user.username}")
     categories = db.query(Category).filter(Category.user_id == current_user.user_id).all()
 
     if not categories:
+        logger.warning(f"No categories found for user {current_user.username}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No categories found."
         )
-
+    logger.info(f"Found {len(categories)} categories for user {current_user.username}")
     return categories
 
 @router.put("/{category_id}", status_code=status.HTTP_200_OK)
@@ -93,11 +95,12 @@ async def edit_category(
     db: DbDependency,
     current_user: Users = Depends(get_current_user),
 ):
-    
+    logger.info(f"User {current_user.username} attempting to update category ID {category_id} to '{category_request.category_name}'")
     # Check if the category exists and belongs to the authenticated user
     category = db.query(Category).filter(Category.category_id == category_id, Category.user_id == current_user.user_id).first()
 
     if not category:
+        logger.error(f"Category ID {category_id} not found or unauthorized for user {current_user.username}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found or not authorized."
@@ -106,6 +109,7 @@ async def edit_category(
     # Check if the new category name already exists for the user
     existing_category = db.query(Category).filter(Category.category_name == category_request.category_name, Category.user_id == current_user.user_id).first()
     if existing_category:
+        logger.warning(f"Category name '{category_request.category_name}' already exists for user {current_user.username}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Category with this name already exists."
@@ -115,7 +119,7 @@ async def edit_category(
     category.category_name = category_request.category_name
     db.commit()
     db.refresh(category)
-
+    logger.info(f"Category ID {category_id} updated to '{category.category_name}' by user {current_user.username}")
     return {"message": f"Category name updated successfully to '{category.category_name}'"}
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -125,13 +129,14 @@ async def delete_category(
     current_user: Users = Depends(get_current_user),
     
 ):
-    
+    logger.info(f"User {current_user.username} attempting to delete category ID {category_id}")
     category = (
         db.query(Category)
         .filter(Category.category_id == category_id, Category.user_id == current_user.user_id)
         .first()
     )
     if not category:
+        logger.error(f"Delete failed: Category ID {category_id} not found or unauthorized for user {current_user.username}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found or not authorized."
@@ -139,5 +144,5 @@ async def delete_category(
 
     db.delete(category)
     db.commit()
-
+    logger.info(f"Category ID {category_id} deleted successfully by user {current_user.username}")
     return {"message": "Category deleted successfully"}
