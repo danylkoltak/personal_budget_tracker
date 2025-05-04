@@ -1,4 +1,4 @@
-# personal_budget_tracker (FastApi framework, Posgres database, Docker)
+# personal_budget_tracker (FastApi framework, Postgres database, Docker)
 
 Main functionality:
 
