@@ -1,6 +1,5 @@
 """Expense management API routes for the Personal Budget Tracker."""
 
-import logging
 from datetime import datetime
 from typing import Annotated, List, Optional
 
@@ -9,14 +8,12 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
+from src.logging_config import logger
 from src.models import Category, Users, Expense
 from src.database import get_db
 from src.auth import get_current_user
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
-
-# Set up logger
-logger = logging.getLogger(__name__)
 
 DbDependency = Annotated[Session, Depends(get_db)]
 

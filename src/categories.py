@@ -1,23 +1,19 @@
 """
 Module for category management including creation, retrieval, and deletion.
 """
-
-import logging
 from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, constr
 from sqlalchemy.orm import Session
 
+from src.logging_config import logger
 from src.models import Category, Users
 from src.database import get_db
 from src.auth import get_current_user
 
 # Initialize router
 router = APIRouter(prefix="/categories", tags=["Categories"])
-
-# Set up logger
-logger = logging.getLogger(__name__)
 
 # Database dependency
 DbDependency = Annotated[Session, Depends(get_db)]

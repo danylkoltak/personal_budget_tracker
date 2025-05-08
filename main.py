@@ -1,6 +1,5 @@
 """Main entry point for the Personal Budget Tracker API."""
 
-import logging
 import os
 from fastapi import FastAPI
 from fastapi.templating import Jinja2Templates
@@ -14,28 +13,13 @@ from src import categories
 from src import expenses
 from src.database import engine
 from src.models import Base
+from src.logging_config import logger
 
 # Admin environment
 from src.admin_app import setup_admin, create_superuser, add_session_middleware
 
 # Load environment variables
 load_dotenv()
-
-
-def setup_logging():
-    """Configures logging for the application."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.FileHandler("app.log"),  # Log to a file
-            logging.StreamHandler()  # Log to console
-        ],
-    )
-    return logging.getLogger(__name__)
-
-
-logger = setup_logging()
 
 # Database Setup
 Base.metadata.create_all(bind=engine)
