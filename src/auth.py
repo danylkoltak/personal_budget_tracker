@@ -1,4 +1,3 @@
-import logging
 import os
 from datetime import datetime, timedelta
 from typing import Annotated, Optional
@@ -17,6 +16,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from src.database import get_db
+from src.logging_config import logger
 from src.models import Users
 
 # Load environment variables
@@ -31,13 +31,10 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # Environment variables
 SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 # Password hashing context
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Logging setup
-logger = logging.getLogger(__name__)
 
 # Template and Static Files Configuration
 templates = Jinja2Templates(directory="templates")
@@ -107,7 +104,6 @@ async def register(
     username: str = Form(...),
     password: str = Form(...),
 ):
-    logger.info("Registration attempt for username: %s", username)
     user = create_user_in_db(username, password, db)
 
     if not user:
@@ -116,7 +112,7 @@ async def register(
             "request": request,
             "error": "Username already exists"
         })
-    logger.info("User '%s' registered successfully", username)
+    logger.info("User registered: %s (ID: %s)", user.username, user.user_id)
 
     return RedirectResponse(url=request.url_for("login"), status_code=303)
 
@@ -126,7 +122,7 @@ async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: DbDependency
 ):
-    logger.info("Login attempt via token endpoint for username: %s", form_data.username)
+    logger.info("Login attempt via token endpoint - username: %s", form_data.username)
     user = db.query(Users).filter(Users.username == form_data.username).first()
 
     if not user or not bcrypt_context.verify(form_data.password, user.hashed_password):
@@ -134,7 +130,7 @@ async def login_for_access_token(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
 
     token = create_access_token(user.user_id, timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    logger.info("Access token generated for user ID: %s", user.user_id)
+    logger.info("Access token generated for user: %s (ID: %s)", user.username, user.user_id)
 
     return {"access_token": token, "token_type": "bearer"}
 
@@ -171,12 +167,13 @@ async def login(
     db: Session = Depends(get_db),
 ):
     """Handles user login and sets access token."""
-    logger.info("Login form submission for user: %s", username)
+    logger.info("Login form submitted - username: %s", username)
     user = db.query(Users).filter(Users.username == username).first()
     if user and bcrypt_context.verify(password, user.hashed_password):
 
         expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         token = create_access_token(user.user_id, expires_delta)
+        logger.info("User logged in: %s (ID: %s)", user.username, user.user_id)
         response = RedirectResponse(url="/dashboard", status_code=303)
         response.set_cookie(key="access_token_cookie", value=token, httponly=False, secure=False)
         return response
@@ -190,9 +187,6 @@ async def get_current_user(
     db: Session = Depends(get_db),
     access_token_cookie: Optional[str] = Cookie(None)
 ):
-    logger.debug("Fetching current user from token")
-    logger.info("Token from cookie: %s", access_token_cookie)
-
     # Extract token from the Authorization header
     auth_header = request.headers.get("Authorization")
     token = None
@@ -206,10 +200,9 @@ async def get_current_user(
     if not token and access_token_cookie:
         token = access_token_cookie
 
-    logger.info("Token received: %s", token)
     user_id = decode_access_token(token)
     if user_id is None:
-        logger.warning("Failed token decoding or no token provided")
+        logger.warning("Failed to decode token or token not provided")
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
     user = db.query(Users).filter(Users.user_id == user_id).first()
