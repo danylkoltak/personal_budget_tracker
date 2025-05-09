@@ -35,8 +35,11 @@ docker-compose up -d
 
 In the terminal, you will see:
  ✔ Network personal_budget_tracker_default Created
+ 
  ✔ Volume "personal_budget_pgdata" Created
+ 
  ✔ Container db Healthy
+ 
  ✔ Container personal-budget-app Started
 
  5. After that, open the browser and on "http://localhost:8000/" or "http://127.0.0.1:8000/" you will see the home page of the app, where you can register and log in as a user, and enjoy the functionality of the app
