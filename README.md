@@ -34,6 +34,7 @@ docker-compose up
 docker-compose up -d
 
 In the terminal, you will see:
+
  ✔ Network personal_budget_tracker_default Created
  
  ✔ Volume "personal_budget_pgdata" Created
