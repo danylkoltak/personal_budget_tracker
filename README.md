@@ -1,6 +1,10 @@
 # personal_budget_tracker (FastApi framework, Postgres database, Docker)
 
-Main functionality:
+INTRODUCTION
+
+A convenient lightweight app aimed to help keeping track of personal finances with categories and expense optional description
+
+MAIN FUNCTIONALITY:
 
 User register and login (via jwt token and hashed password)
 Creating, deleting, and editing Categories
@@ -9,17 +13,27 @@ Get total sum of all Expenses for a specific Category
 Get total sum for all Categories
 Logout with deleting access token from cookies
 
-The Docker container "personal_budget_tracker" includes two services: "db" (name of the container: db, with database configuration) and "app" (name of the container: personal-budget-app, with the logic of the app itself and admin environment)
+The Docker container "personal_budget_tracker" includes two services:
+"db" (name of the container: db, with database configuration)
+"app" (name of the container: personal-budget-app, with the logic of the app itself and admin environment)
 
-To launch the app locally and gain access to the fucnctionality, follow these steps:
+To launch the app locally and gain access to the functionality, follow these steps:
 
 1. Clone the project to your local machine from the corresponding git repository
 
-2. Paste .env file into the root folder on the same level as main.py. (.env must contain variebles for DATABASE_URL=, ACCESS_TOKEN_EXPIRE_MINUTES=, SECRET_KEY=, SUPERUSER_USERNAME=, and SUPERUSER_PASSWORD=)
+2. Paste .env file into the root folder on the same level as main.py.
+(.env.template contains all the neede variables to be filled)
 
-3.  Run "docker-compose build" command in the terminal (assuming you have Docker installed)
+3.  Run the docker command in the terminal (assuming you have Docker installed)
 
-4. Run "docker-compose up" or "docker-compose up -d" command to make the container running. In the terminal, you will see:
+docker-compose build
+
+4. To make the container running use one of the two options:
+
+docker-compose up
+docker-compose up -d
+
+In the terminal, you will see:
  ✔ Network personal_budget_tracker_default Created
  ✔ Volume "personal_budget_pgdata" Created
  ✔ Container db Healthy
