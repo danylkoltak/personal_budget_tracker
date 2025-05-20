@@ -84,7 +84,7 @@ async def see_all_categories(
     logger.info(f"Found {len(categories)} categories for user {current_user.username}")
     return categories
 
-@router.put("/{category_id}", status_code=status.HTTP_200_OK)
+@router.put("/{category_id}", response_model=CategoryResponse, status_code=status.HTTP_200_OK)
 async def edit_category(
     category_id: int,
     category_request: CategoryCreateRequest,
@@ -116,7 +116,7 @@ async def edit_category(
     db.commit()
     db.refresh(category)
     logger.info(f"Category ID {category_id} updated to '{category.category_name}' by user {current_user.username}")
-    return {"message": f"Category name updated successfully to '{category.category_name}'"}
+    return category
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(

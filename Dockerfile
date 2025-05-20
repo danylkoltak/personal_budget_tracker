@@ -1,6 +1,6 @@
 FROM python:3.12.6
 
-ENV PYTHONPATH="/app/src"
+ENV PYTHONPATH="/app:/app/src"
 
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 

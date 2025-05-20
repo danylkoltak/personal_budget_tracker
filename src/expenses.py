@@ -82,7 +82,7 @@ async def add_expense(
     return new_expense
 
 
-@router.put("/{expense_id}", status_code=status.HTTP_200_OK)
+@router.put("/{expense_id}", response_model=ExpenseResponse, status_code=status.HTTP_200_OK)
 async def edit_expense(
     expense_id: int,
     expense_update: ExpenseUpdateRequest,
@@ -103,7 +103,7 @@ async def edit_expense(
     db.refresh(expense)
 
     logger.info("Expense %s updated successfully by user %s", expense_id, current_user.username)
-    return {"message": "Expense updated successfully."}
+    return expense
 
 @router.get("/sum_all", response_model=dict, status_code=status.HTTP_200_OK)
 async def sum_all_expenses(
