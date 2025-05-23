@@ -187,7 +187,7 @@ async def sum_expenses_for_category(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found or unauthorized.",
         )
-    # Sum up the expenses for this category
+    
     total_expenses = db.query(func.sum(Expense.added_expense_amount)).filter(Expense.category_id == category_id).scalar() or 0
 
     logger.info("Total expenses for category %s: %.2f", category_id, total_expenses)

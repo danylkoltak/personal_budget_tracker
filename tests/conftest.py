@@ -9,13 +9,10 @@ from src.database import Base, get_db
 from main import app  # Adjust path if necessary
 from fastapi.testclient import TestClient
 
-# Load env vars
 load_dotenv()
 
-# Extract DB connection parts from your .env
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Parse your DATABASE_URL to reuse credentials/host for test DB
 from urllib.parse import urlparse
 
 parsed_url = urlparse(DATABASE_URL)
@@ -24,15 +21,12 @@ password = parsed_url.password or "budget123"
 hostname = parsed_url.hostname or "localhost"
 port = parsed_url.port or 5432
 
-# Use the same credentials, but different DB name
 TEST_DB_NAME = "budget_test_db"
 POSTGRES_ADMIN_URL = f"postgresql://{username}:{password}@{hostname}:{port}/postgres"
 TEST_DB_URL = f"postgresql://{username}:{password}@{hostname}:{port}/{TEST_DB_NAME}"
 
-# SQLAlchemy test engine + session
 engine = sqlalchemy.create_engine(TEST_DB_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 
 def override_get_db():
     db = TestingSessionLocal()

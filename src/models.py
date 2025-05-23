@@ -1,6 +1,4 @@
-"""
-This module defines database models for Users, Categories, and Expenses.
-"""
+"""This module defines database models for Users, Categories, and Expenses."""
 
 from datetime import datetime
 from sqlalchemy import (
@@ -19,9 +17,8 @@ from src.database import Base
 
 
 class Users(Base):
-    """
-    Represents a user in the system.
-    """
+    """Represents a user in the system."""
+
     __tablename__ = "users"
 
     user_id = Column(Integer, primary_key=True, index=True)
@@ -37,9 +34,8 @@ class Users(Base):
 
 
 class Category(Base):
-    """
-    Represents a spending category associated with a user.
-    """
+    """Represents a spending category associated with a user."""
+
     __tablename__ = "categories"
 
     category_id = Column(Integer, primary_key=True, index=True)
@@ -59,9 +55,8 @@ class Category(Base):
 
 
 class Expense(Base):
-    """
-    Represents an expense under a specific category.
-    """
+    """Represents an expense under a specific category."""
+    
     __tablename__ = "expenses"
 
     expense_id = Column(Integer, primary_key=True, index=True)

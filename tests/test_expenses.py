@@ -41,7 +41,6 @@ def test_create_expense(client, auth_token, category_id):
     assert data["category_id"] == category_id
 
 def test_get_expenses(client, auth_token, category_id):
-    # Create an expense to ensure at least one exists
     client.post("/expenses/", json={
         "added_expense_amount": 10,
         "expense_description": "Coffee",
@@ -54,14 +53,12 @@ def test_get_expenses(client, auth_token, category_id):
     assert any(exp["expense_description"] == "Coffee" for exp in expenses)
 
 def test_update_expense(client, auth_token, category_id):
-    # Create an expense
     create_resp = client.post("/expenses/", json={
         "added_expense_amount": 5,
         "expense_description": "Snack",
         "category_id": category_id
     }, headers=auth_headers(auth_token))
     expense_id = create_resp.json()["expense_id"]
-    # Update the expense
     update_payload = {
         "added_expense_amount": 7,
         "expense_description": "Snack (updated)",
@@ -77,13 +74,11 @@ def test_update_expense(client, auth_token, category_id):
 
 
 def test_delete_expense(client, auth_token, category_id):
-    # Create an expense
     create_resp = client.post("/expenses/", json={
         "added_expense_amount": 3,
         "expense_description": "Water",
         "category_id": category_id
     }, headers=auth_headers(auth_token))
     expense_id = create_resp.json()["expense_id"]
-    # Delete the expense
     response = client.delete(f"/expenses/{expense_id}", headers=auth_headers(auth_token))
     assert response.status_code == 204

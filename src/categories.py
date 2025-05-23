@@ -20,16 +20,12 @@ DbDependency = Annotated[Session, Depends(get_db)]
 
 
 class CategoryCreateRequest(BaseModel):
-    """
-    Schema for creating a category.
-    """
+    """Schema for creating a category."""
     category_name: Annotated[str, constr(strip_whitespace=True, min_length=1, max_length=100)]
 
 
 class CategoryResponse(BaseModel):
-    """
-    Schema for category response.
-    """
+    """Schema for category response."""
     category_id: int
     category_name: str
 
@@ -66,7 +62,6 @@ async def create_category(
     logger.info(f"Category '{new_category.category_name}' created successfully for user {current_user.username}")
     return {"message": f"Category '{new_category.category_name}' created successfully", "id": new_category.category_id}
 
-
 @router.get("/", response_model=List[CategoryResponse], status_code=status.HTTP_200_OK)
 async def see_all_categories(
     db: DbDependency,
@@ -92,6 +87,7 @@ async def edit_category(
     current_user: Users = Depends(get_current_user),
 ):
     logger.info(f"User {current_user.username} attempting to update category ID {category_id} to '{category_request.category_name}'")
+    
     # Check if the category exists and belongs to the authenticated user
     category = db.query(Category).filter(Category.category_id == category_id, Category.user_id == current_user.user_id).first()
 

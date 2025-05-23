@@ -18,7 +18,6 @@ from src.logging_config import logger
 # Admin environment
 from src.admin_app import setup_admin, create_superuser, add_session_middleware
 
-# Load environment variables
 load_dotenv()
 
 # Database Setup
@@ -37,7 +36,7 @@ app = FastAPI(
 # Secret Key for Session Middleware
 SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
 
-# Include Routers Dynamically
+# Routers Dynamically
 routers = [auth.router, pages.router, categories.router, expenses.router]
 for router in routers:
     app.include_router(router)
