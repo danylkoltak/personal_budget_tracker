@@ -19,38 +19,33 @@ from src.database import get_db
 from src.logging_config import logger
 from src.models import Users
 
-# Load environment variables
 load_dotenv()
 
-# OAuth2 scheme for token authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
-# FastAPI router setup
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-# Environment variables
 SECRET_KEY = os.getenv("SECRET_KEY", "your_default_secret")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
-# Password hashing context
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Template and Static Files Configuration
 templates = Jinja2Templates(directory="templates")
 
-# Database dependency
 DbDependency = Annotated[Session, Depends(get_db)]
 
 
 class CreateUserRequest(BaseModel):
     """Schema for user creation request."""
+
     username: str
     password: str
 
 
 class Token(BaseModel):
     """Schema for authentication token response."""
+
     access_token: str
     token_type: str
 
@@ -92,8 +87,8 @@ async def create_user(create_user_request: CreateUserRequest, db: DbDependency):
 @router.get("/register", response_class=HTMLResponse, name="register")
 async def register_page(request: Request):
     """Renders the registration page."""
-    logger.debug("Rendering register page")
 
+    logger.debug("Rendering register page")
     return templates.TemplateResponse("register.html", {"request": request})
 
 
@@ -217,6 +212,7 @@ async def get_current_user(
 @router.get("/logout", name="logout")
 async def logout():
     """Handles user logout by clearing the access token."""
+    
     logger.info("Logout request received")
     response = RedirectResponse(url="/")
     response.delete_cookie("access_token_cookie")

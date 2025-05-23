@@ -9,7 +9,6 @@ def user_data():
 
 @pytest.fixture
 def auth_token(client, user_data):
-    # Register and login user, return token
     client.post("/auth/", json=user_data)
     response = client.post("/auth/token", data=user_data)
     return response.json()["access_token"]
@@ -32,7 +31,6 @@ def test_create_duplicate_category(client, auth_token):
     assert "already exists" in response.json()["detail"]
 
 def test_get_all_categories(client, auth_token):
-    # Create a category to ensure at least one exists
     client.post("/categories/", json={"category_name": "Transport"}, headers=auth_headers(auth_token))
     response = client.get("/categories/", headers=auth_headers(auth_token))
     assert response.status_code == 200
@@ -40,10 +38,8 @@ def test_get_all_categories(client, auth_token):
     assert any(cat["category_name"] == "Transport" for cat in response.json())
 
 def test_edit_category(client, auth_token):
-    # Create a category
     create_resp = client.post("/categories/", json={"category_name": "OldName"}, headers=auth_headers(auth_token))
     cat_id = create_resp.json()["id"]
-    # Edit the category
     response = client.put(f"/categories/{cat_id}", json={"category_name": "NewName"}, headers=auth_headers(auth_token))
     assert response.status_code == 200
     data = response.json()
@@ -51,9 +47,7 @@ def test_edit_category(client, auth_token):
     assert data["category_name"] == "NewName"
 
 def test_delete_category(client, auth_token):
-    # Create a category
     create_resp = client.post("/categories/", json={"category_name": "ToDelete"}, headers=auth_headers(auth_token))
     cat_id = create_resp.json()["id"]
-    # Delete the category
     response = client.delete(f"/categories/{cat_id}", headers=auth_headers(auth_token))
     assert response.status_code == 204
