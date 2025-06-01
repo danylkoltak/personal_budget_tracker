@@ -143,7 +143,12 @@ class UsersAdmin(ModelView, model=Users):
 class CategoryAdmin(ModelView, model=Category):
     """SQLAdmin view for Category model."""
 
-    column_list = [Category.category_id, Category.category_name, Category.user_id]
+    column_list = [
+        Category.category_id,
+        Category.category_name,
+        Category.user_id,
+        "user.username"   
+    ]
 
 
 class ExpenseAdmin(ModelView, model=Expense):
@@ -154,12 +159,15 @@ class ExpenseAdmin(ModelView, model=Expense):
         Expense.added_expense_amount,
         Expense.timestamp,
         Expense.expense_description,
-        Expense.category_id
+        Expense.category_id,
+        "category.category_name",
+        "category.user.username"
     ]
 
 
 def setup_admin(app):
     """Initialize SQLAdmin with model views and authentication."""
+    
     admin = Admin(app=app, engine=engine, authentication_backend=AdminAuth())
 
     admin.add_view(UsersAdmin)
