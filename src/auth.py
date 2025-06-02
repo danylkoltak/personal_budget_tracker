@@ -109,7 +109,13 @@ async def register(
         })
     logger.info("User registered: %s (ID: %s)", user.username, user.user_id)
 
-    return RedirectResponse(url=request.url_for("login"), status_code=303)
+    return templates.TemplateResponse(
+        "login.html",
+        {
+            "request": request,
+            "message": f"Registration successful for user '{user.username}'! Please sign in with your valid credentials."
+        }
+    )
 
 
 @router.post("/token", response_model=Token)

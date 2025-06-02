@@ -5,6 +5,11 @@
     {% if error %}
         <p style="color:red;">{{ error }}</p>
     {% endif %}
+    {% if message %}
+    <div class="alert alert-success">
+        {{ message }}
+    </div>
+    {% endif %}
     <form method="post" action="{{ url_for('login') }}">
         <label>Username: <input type="text" name="username" maxlength="50" required></label><br>
         <label>Password: <input type="password" name="password" maxlength="255" required></label><br>
