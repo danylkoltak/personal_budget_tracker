@@ -35,6 +35,9 @@
                         <div class="expense-details">
                             <span class="expense-amount">Spent: {{ expense.added_expense_amount }}</span><br>
                             <span class="expense-description">{{ expense.expense_description or "No description" }}</span>
+                            <span class="expense-timestamp">
+                                Date: {{ expense.timestamp.strftime('%Y-%m-%d') if expense.timestamp else "No date" }}
+                            </span>
                         </div>
                         <div class="expense-actions">
                             <button class="btn edit-btn edit-expense-btn" data-expense-id="{{ expense.expense_id }}">
