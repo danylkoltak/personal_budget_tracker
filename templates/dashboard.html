@@ -34,7 +34,7 @@
                     <li>
                         <div class="expense-details">
                             <span class="expense-amount">Spent: {{ expense.added_expense_amount }}</span><br>
-                            <span class="expense-description">{{ expense.expense_description or "No description" }}</span>
+                            <span class="expense-description">{{ expense.expense_description or "No description" }}</span><br>
                             <span class="expense-timestamp">
                                 Date: {{ expense.timestamp.strftime('%Y-%m-%d') if expense.timestamp else "No date" }}
                             </span>
